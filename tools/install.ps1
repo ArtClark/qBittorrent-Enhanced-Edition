@@ -57,7 +57,9 @@ Add-Type -AssemblyName System.IO.Compression.FileSystem
 # Extract entry-by-entry with overwrite. The framework-style
 # ZipFile::ExtractToDirectory(src, dst, $overwrite) overload used here previously does not
 # exist in .NET Framework (Windows PowerShell 5.1) -- only in the newer .NET API used by
-# PowerShell 7. ZipArchiveEntry.ExtractToFile(dst, $true) supports overwrite on all runtimes.
+# PowerShell 7. ExtractToFile is an extension method (ZipFileExtensions), which PowerShell
+# does not bind as an instance member, so it is invoked statically; the trailing $true
+# overwrites an existing file and works on all runtimes.
 $archive = [System.IO.Compression.ZipFile]::OpenRead($zip.FullName)
 try {
     foreach ($entry in $archive.Entries) {
@@ -66,7 +68,7 @@ try {
         if (-not (Test-Path -LiteralPath $targetDir)) {
             New-Item -ItemType Directory -Force -Path $targetDir | Out-Null
         }
-        $entry.ExtractToFile($target, $true)
+        [System.IO.Compression.ZipFileExtensions]::ExtractToFile($entry, $target, $true)
     }
 }
 finally {
