@@ -51,8 +51,27 @@ if (-not (Test-Path -LiteralPath $PortableAppsPerAppDir)) {
 # 3. Extract the ZIP on top of the per-app folder (overwrite deployed files).
 # ---------------------------------------------------------------------------
 Write-Host "Deploying '$($zip.Name)' -> $PortableAppsPerAppDir"
+Add-Type -AssemblyName System.IO.Compression
 Add-Type -AssemblyName System.IO.Compression.FileSystem
-[System.IO.Compression.ZipFile]::ExtractToDirectory($zip.FullName, $PortableAppsPerAppDir, $true)
+
+# Extract entry-by-entry with overwrite. The framework-style
+# ZipFile::ExtractToDirectory(src, dst, $overwrite) overload used here previously does not
+# exist in .NET Framework (Windows PowerShell 5.1) -- only in the newer .NET API used by
+# PowerShell 7. ZipArchiveEntry.ExtractToFile(dst, $true) supports overwrite on all runtimes.
+$archive = [System.IO.Compression.ZipFile]::OpenRead($zip.FullName)
+try {
+    foreach ($entry in $archive.Entries) {
+        $target = Join-Path $PortableAppsPerAppDir $entry.FullName
+        $targetDir = Split-Path -Parent $target
+        if (-not (Test-Path -LiteralPath $targetDir)) {
+            New-Item -ItemType Directory -Force -Path $targetDir | Out-Null
+        }
+        $entry.ExtractToFile($target, $true)
+    }
+}
+finally {
+    $archive.Dispose()
+}
 
 # The per-app binary now on disk (the standard PortableApps.COM layout).
 $appExe = Join-Path $PortableAppsPerAppDir 'App\qBittorrent64\qbittorrent.exe'
