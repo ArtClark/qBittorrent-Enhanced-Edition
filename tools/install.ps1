@@ -93,6 +93,10 @@ Write-Host "Application path: $appExe"
 Write-Host ""
 $launch = Read-Host 'Start the application now? [Y/n]'
 if ($launch -eq '' -or $launch -match '^(y|yes)$' -or $launch -match '^(Y|YES)$') {
+    # The PortableApps shim file must normally be executed to
+    # use the roaming profile within the PortableApps' folder.
+    # For example, this would be the proper binary to start:
+    # "<per-app folder>\qBittorrentEnhancedPortable.exe"
     Start-Process -FilePath $appExe
     Write-Host 'Launched.'
 }
