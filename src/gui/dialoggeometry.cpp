@@ -1,6 +1,6 @@
 /*
  * Bittorrent Client using Qt and libtorrent.
- * Copyright (C) 2006  Christophe Dumez <chris@qbittorrent.org>
+ * Copyright (C) 2026  Art Clark (ArtClark)
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -26,32 +26,47 @@
  * exception statement from your version.
  */
 
-#pragma once
+#include "dialoggeometry.h"
 
-#include <QDialog>
+#include <QByteArray>
+#include <QSize>
+#include <QWidget>
 
-namespace Ui
+#include "base/settingsstorage.h"
+
+namespace DialogGeometry
 {
-    class PluginSourceDialog;
+    namespace
+    {
+        SettingsStorage *settings()
+        {
+            return SettingsStorage::instance();
+        }
+    }
+
+    bool restore(QWidget *dlg, const QString &geometryKey, const QString &legacySizeKey)
+    {
+        const QByteArray geometry = settings()->loadValue<QByteArray>(geometryKey);
+        if (!geometry.isEmpty())
+            return dlg->restoreGeometry(geometry);
+
+        // Backward compatibility with the previous size-only handling: keep the remembered
+        // size (but not the position, which was never persisted before).
+        if (!legacySizeKey.isEmpty())
+        {
+            const QSize legacySize = settings()->loadValue<QSize>(legacySizeKey);
+            if (legacySize.isValid())
+            {
+                dlg->resize(legacySize);
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    void save(QWidget *dlg, const QString &geometryKey)
+    {
+        settings()->storeValue(geometryKey, dlg->saveGeometry());
+    }
 }
-
-class PluginSourceDialog final : public QDialog
-{
-    Q_OBJECT
-    Q_DISABLE_COPY_MOVE(PluginSourceDialog)
-
-public:
-    explicit PluginSourceDialog(QWidget *parent = nullptr);
-    ~PluginSourceDialog() override;
-
-signals:
-    void askForUrl();
-    void askForLocalFile();
-
-private slots:
-    void on_localButton_clicked();
-    void on_urlButton_clicked();
-
-private:
-    Ui::PluginSourceDialog *m_ui = nullptr;
-};
