@@ -102,17 +102,23 @@ cd C:\repos\qBittorrent-Enhanced-Edition\tools
 .\package_zip.ps1                     # -> <repo>\deploy\qBittorrentEnhancedPortable_<ver>.zip
 ```
 
-The official PortableApps repack of qBittorrent-enh ships without the Qt runtimes,
-so it relies on a system-installed Qt and doesn't run standalone. Our build links Qt6
-dynamically, so the executable needs the Qt6 DLLs + platform/plugin DLLs in the same
-folder. `package_zip.ps1` collects exactly those from the build directory and zips
-them under an `App\qBittorrent64\` prefix (no enclosing per-app folder), producing
+The official PortableApps repack of qBittorrent-enh is **fully statically linked**: its
+44.9 MB `qbittorrent.exe` imports no Qt DLLs at all (confirmed via `dumpbin /IMPORTS` — no
+Qt6/libtorrent/CRT imports, only Windows system DLLs). Qt, libtorrent, Boost, OpenSSL and
+the C++ runtime are all compiled into that single exe, which is why the package ships with
+no DLLs and runs standalone.
+
+Our build, by contrast, links Qt6 **dynamically**: `qbittorrent.exe` (≈21.4 MB) imports
+`Qt6Core.dll`, `Qt6Gui.dll`, etc., and the C++ runtime (`MSVCP140.dll`/`VCRUNTIME140.dll`).
+So our package **must** ship those DLLs + the platform/plugin DLLs in the same folder to run
+standalone. `package_zip.ps1` collects exactly those from the build directory and zips them
+under an `App\qBittorrent64\` prefix (no enclosing per-app folder), producing
 `qBittorrentEnhancedPortable_<ver>.zip` in the `deploy/` folder.
 
 To deploy, first run the official self-installer
 (`qBittorrentEnhancedPortable_<ver>.paf.exe`), let it create the per-app folder, then
 extract this ZIP **into that folder** (right-drag → "Extract Here"), overwriting the
-deployed app files. That updates `qbittorrent.exe` and adds the missing Qt runtime.
+deployed app files. That updates `qbittorrent.exe` and adds the required Qt runtime.
 The launcher, AppInfo, Data, DefaultData and Other are left untouched.
 
 **Remove everything again** (only after a successful build):
