@@ -22,7 +22,7 @@ param(
     # Folder holding the packaged ZIP (repo\deploy by default).
     [string]$DeployDir,
     # The per-app folder to deploy into (this is the PortableApps install target).
-    [string]$PortableAppsPerAppDir = 'E:\PortableApps\qBittorrentEnhancedPortable'
+    [string]$PortableAppsPerAppDir = 'E:\PortableApps\qBittorrentEnhancedPortable2'
 )
 
 $ErrorActionPreference = 'Stop'
