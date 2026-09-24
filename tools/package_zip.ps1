@@ -66,6 +66,13 @@ else {
 $exe = Join-Path $BuildDir 'qbittorrent.exe'
 if (-not (Test-Path -LiteralPath $exe)) { throw "Built executable not found: $exe (run the build first)." }
 
+# The Qt runtime must already be staged next to the exe (Qt6Core.dll + plugin
+# folders). Nothing in the upstream build does this for dynamically-linked
+# builds, so bail loudly instead of packaging a bundle that cannot run.
+if (-not (Test-Path -LiteralPath (Join-Path $BuildDir 'Qt6Core.dll'))) {
+    throw "Qt runtime not staged next to the exe (missing $BuildDir\Qt6Core.dll). Run windeployqt first -- install-build-deps.ps1 -BuildQbt -Target qbt_app does this automatically."
+}
+
 # ---------------------------------------------------------------------------
 # 3. Stage the PortableApps.COM layout in a temp folder.
 #    Zip root will contain "App\qBittorrent64\..." (no per-app folder).

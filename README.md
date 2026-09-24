@@ -113,6 +113,13 @@ Transient build artifacts (boost archive, aqt download cache, vcpkg
 buildtrees/downloads, the libtorrent intermediate `build` dir) are pruned
 automatically.
 
+**Measured times** (first full `qbt_app` build, 2026-09-24, on a 4-core / 8 GB
+machine): CMake configure **~125 s**, full build (**408 translation units**,
+incl. translations + RCC) **~48 min**, whole scripted chain **~51 min**; the
+feature file `dialoggeometry.cpp` compiled clean. The build dir adds ~0.8 GB,
+so the retained footprint (~4.6 GB) matches the table above. Note for small
+machines: use `-Jobs` to cap parallelism and keep RAM thrash down.
+
 **Build manually** (if you did not use `-BuildQbt`):
 
 ```pwsh

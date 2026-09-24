@@ -30,6 +30,11 @@
 .PARAMETER MinFreeGB
   Abort when free disk space drops below this many GB (default: 6).
 
+.PARAMETER Jobs
+  Maximum parallel compile jobs passed to ninja. Default: one per logical
+  processor (ninja's own default). Lower it on memory-constrained machines
+  (e.g. 4 cores / 8 GB RAM) -- an uncapped C++ build can thrash RAM hard.
+
 .PARAMETER Target
   Which CMake/ninja target to build when -BuildQbt is set (default: qbt_gui,
   the static GUI library that compiles every dialog). Pass 'qbt_app' (the
@@ -47,6 +52,7 @@ param(
     [switch]$SkipBoost,
     [switch]$SkipLibtorrent,
     [int]$MinFreeGB = 6,
+    [int]$Jobs = 0,
     [string]$Target = 'qbt_gui',
     [string]$LogFile
 )
@@ -386,7 +392,9 @@ try {
             try {
                 & cmake @ltCmakeArgs
                 if ($LASTEXITCODE -ne 0) { throw 'libtorrent cmake configure failed.' }
-                & cmake --build $ltBuild
+                $ltBuildArgs = @('--build', $ltBuild)
+                if ($Jobs -gt 0) { $ltBuildArgs += @('--', '-j', "$Jobs") }
+                & cmake @ltBuildArgs
                 if ($LASTEXITCODE -ne 0) { throw 'libtorrent build failed.' }
                 & cmake --install $ltBuild
                 if ($LASTEXITCODE -ne 0) { throw 'libtorrent install failed.' }
@@ -430,8 +438,30 @@ try {
                 & cmake @qbtCmakeArgs
                 if ($LASTEXITCODE -ne 0) { throw 'qBittorrent cmake configure failed.' }
             }
-            & cmake --build $qbtBuild --target $Target
+            $buildArgs = @('--build', $qbtBuild, '--target', $Target)
+            if ($Jobs -gt 0) { $buildArgs += @('--', '-j', "$Jobs") }
+            & cmake @buildArgs
             if ($LASTEXITCODE -ne 0) { throw "qBittorrent ($Target target) build failed." }
+
+            # windeployqt: stage the dynamically-linked Qt runtime (Qt6*.dll +
+            # plugin folders) next to the exe in $qbtBuild, where package_zip.ps1
+            # expects it. Only meaningful for the executable target; qbt_gui
+            # produces no exe yet. --compiler-runtime also copies the MSVC C++
+            # runtime (MSVCP140.dll/VCRUNTIME140.dll) that qbittorrent.exe imports.
+            # --no-translations: the PortableApps layout ships its own translations
+            # folder, pointed at via qt.conf.
+            $qbtAppExe = Join-Path $qbtBuild 'qbittorrent.exe'
+            if ($Target -eq 'qbt_app' -and (Test-Path -LiteralPath $qbtAppExe)) {
+                $windeployqt = Join-Path $qtPrefix 'bin\windeployqt.exe'
+                if (Test-Path -LiteralPath $windeployqt) {
+                    Write-Status 'Step 6: Staging Qt runtime (windeployqt)'
+                    & $windeployqt --no-translations --compiler-runtime $qbtAppExe
+                    if ($LASTEXITCODE -ne 0) { throw 'windeployqt failed.' }
+                }
+                else {
+                    Write-Host "WARNING: windeployqt.exe not found at $windeployqt - Qt runtime NOT staged. package_zip.ps1 will produce a bundle that cannot run standalone." -ForegroundColor DarkYellow
+                }
+            }
         }
         finally { Pop-Location }
         Log-Size 'qBittorrent build' $qbtBuild
