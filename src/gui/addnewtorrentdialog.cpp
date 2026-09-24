@@ -405,6 +405,13 @@ AddNewTorrentDialog::AddNewTorrentDialog(const BitTorrent::TorrentDescriptor &to
         settings()->storeValue(KEY_SAVEPATHHISTORY, settings()->loadValue<QStringList>(KEY_SAVEPATHHISTORY).mid(0, length));
     });
 
+    // Pin the torrent-options pane's width when the dialog is resized.
+    // QSplitter's default spreads extra width across both panes, so the
+    // splitter drifts as the dialog widens; stretch (0, 1) sends all width
+    // changes to the content pane instead.
+    m_ui->splitter->setStretchFactor(0, 0);
+    m_ui->splitter->setStretchFactor(1, 1);
+
     setCurrentContext(std::make_shared<Context>(Context {torrentDescr, inParams}));
 }
 
