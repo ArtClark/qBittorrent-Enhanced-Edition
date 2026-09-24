@@ -32,8 +32,8 @@
 
 .PARAMETER Target
   Which CMake/ninja target to build when -BuildQbt is set (default: qbt_gui,
-  the static GUI library that compiles every dialog). Pass 'qbittorrent' to
-  build the final application executable.
+  the static GUI library that compiles every dialog). Pass 'qbt_app' (the
+  executable target, produced as qbittorrent.exe) instead.
 
 .PARAMETER LogFile
   Also write a full transcript (all console output, including native build

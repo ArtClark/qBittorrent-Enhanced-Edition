@@ -154,6 +154,11 @@ extract this ZIP **into that folder** (right-drag → "Extract Here"), overwriti
 deployed app files. That updates `qbittorrent.exe` and adds the required Qt runtime.
 The launcher, AppInfo, Data, DefaultData and Other are left untouched.
 
+Prefer the scripted deploy: `.\tools\install.ps1` performs the same extraction
+for you (entry-by-entry, no manual dragging) into the target per-app folder --
+by default the machine's PortableApps tree; point it elsewhere with
+`-PortableAppsPerAppDir`.
+
 **Remove everything again** (only after a successful build):
 
 ```pwsh
