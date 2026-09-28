@@ -83,7 +83,8 @@ takes care of the rest automatically.
 * **Git for Windows 2.53.0**
 * **Python 3.14.6** (used by `aqtinstall` to fetch Qt)
 * **Chocolatey 2.7.3** (available if ever needed)
-* ~15 GB of free disk is comfortable (the retained footprint is ~4–5 GB)
+* ~15 GB of free disk is comfortable; the retained footprint is ~4.6 GB — see
+  the table below, and allow ~6 GB of headroom for the install itself.
 
 What the install script adds that you do **not** already have: Qt, vcpkg and its
 packages, Boost headers, and libtorrent — see the table below.
@@ -99,26 +100,46 @@ cd C:\repos\qBittorrent-Enhanced-Edition\tools
 ```
 
 Each step appends its on-disk size and the remaining free space to
-`C:\qbt-deps\sizes.log`. Expected values, measured exactly by the script:
+`C:\qbt-deps\sizes.log`. The table below is transcribed from that log
+(run of 2026-09-24, 4-core / 8 GB machine), not estimated:
 
-| Component | Location | Approx. size |
+| Component | Location | Size |
 | --- | --- | --- |
-| Qt 6.10.1 (`win64_msvc2022_64` + qtimageformats) | `C:\Qt` | ≈ 1.3 GB |
-| vcpkg (clone, bootstrap, boost-build/openssl/zlib) | `C:\vcpkg` | ≈ 0.5 GB |
-| Boost 1.90.0 headers (staged via `b2`) | `C:\qbt-deps\boost` | ≈ 0.6 GB |
-| libtorrent 2.0.11 | `C:\qbt-deps\libtorrent` | ≈ 0.2 GB |
-| qBittorrent build | `<repo>\build` | ≈ 1 GB |
+| Qt 6.10.1 (`win64_msvc2022_64` + qtimageformats) | `C:\Qt` | 2.00 GB |
+| vcpkg (clone, bootstrap, boost-build/openssl/zlib) | `C:\vcpkg` | 0.21 GB |
+| Boost 1.90.0 headers (staged via `b2`) | `C:\qbt-deps\boost` | 0.98 GB |
+| libtorrent 2.0.11 (static, `RelWithDebInfo`) | `C:\qbt-deps\libtorrent` | 0.64 GB |
+| qBittorrent build | `<repo>\build` | 0.79 GB |
+| **Total retained** | | **4.62 GB** |
 
 Transient build artifacts (boost archive, aqt download cache, vcpkg
 buildtrees/downloads, the libtorrent intermediate `build` dir) are pruned
-automatically.
+automatically, so these figures are **post-prune** — what is left once the
+install finishes. Peak usage part-way through the install is higher; allow
+roughly 6 GB of headroom rather than 4.62 GB.
+
+Two rows are worth understanding before you start, because both are larger
+than a first guess would suggest:
+
+* **libtorrent's 0.64 GB is almost entirely one file.**
+  `install\lib\torrent-rasterbar.lib` is **569.67 MB** — a *static* archive
+  compiled `RelWithDebInfo`, so debug information is embedded per object file.
+  The intermediate `build` directory that gets pruned was never the bulk, which
+  is the easy mistake to make when sizing this. Building libtorrent as `Release`
+  instead of `RelWithDebInfo` drops this row by several hundred MB.
+* **vcpkg is 0.21 GB only after pruning.** Its `buildtrees` and `downloads`
+  directories exist for the duration of the run and are removed at the end.
+
+Boost is 0.98 GB across ~93,000 files, most of which are documentation and
+per-library headers rather than anything the build reads.
 
 **Measured times** (first full `qbt_app` build, 2026-09-24, on a 4-core / 8 GB
 machine): CMake configure **~125 s**, full build (**408 translation units**,
 incl. translations + RCC) **~48 min**, whole scripted chain **~51 min**; the
-feature file `dialoggeometry.cpp` compiled clean. The build dir adds ~0.8 GB,
-so the retained footprint (~4.6 GB) matches the table above. Note for small
-machines: use `-Jobs` to cap parallelism and keep RAM thrash down.
+feature file `dialoggeometry.cpp` compiled clean. The build directory is the
+0.79 GB row above, so the retained footprint is **4.62 GB**, matching the total
+in the table. Note for small machines: use `-Jobs` to cap parallelism and keep
+RAM thrash down.
 
 **Build manually** (if you did not use `-BuildQbt`):
 
