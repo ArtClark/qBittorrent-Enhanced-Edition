@@ -1,12 +1,24 @@
 name: CI - Windows
 
-on: [pull_request, push]
+on:
+  workflow_dispatch:
+  pull_request:
+  push:
+    branches:
+      - "v5_2_x"
+    paths:
+      - "src/**"
+      - "test/**"
+      - "cmake/**"
+      - "CMakeLists.txt"
+      - "dist/windows/**"
+      - ".github/workflows/ci_windows.yaml"
 
 permissions: {}
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
-  cancel-in-progress: ${{ github.head_ref != '' }}
+  group: ${{ github.workflow }}-${{ github.head_ref || github.ref }}
+  cancel-in-progress: true
 
 jobs:
   ci:
@@ -22,10 +34,6 @@ jobs:
           - version: "2.0.11"
             boost_major_version: "1"
             boost_minor_version: "90"
-            boost_patch_version: "0"
-          - version: "1.2.20"
-            boost_major_version: "1"
-            boost_minor_version: "86"
             boost_patch_version: "0"
         config:
         - os: windows-latest
